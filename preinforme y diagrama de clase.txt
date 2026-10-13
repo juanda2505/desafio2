@@ -1,0 +1,4 @@
+link preinforme y diagrama de clases
+https://github.com/juanda2505/desafio2/tree/main
+este primer repo me estuvo dando fallas, asi que decidí crear este para la entrega final del desafio 2
+link repositorio desafio2:https://github.com/juanda2505/desafio2
