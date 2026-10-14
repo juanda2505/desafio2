@@ -1,86 +1,65 @@
 #include <iostream>
 #include <fstream>
+#include <string>
+#include "usuario.h"
 
-using namespace std;
-// ============================================================
-// PROCESAMIENTO DE UNA LÍNEA
-// ============================================================
+// 1000 porque el enunciado exige la demo con mínimo 1000 usuarios registrados
+// y el archivo generado tiene exactamente esa cantidad.
+const int MAX_USUARIOS = 1000;
 
-// Recibe una línea del archivo (texto con campos separados por comas),
-// la separa en sus 8 campos y los imprime con su nombre.
-void procesarLineaUsuario(const char* linea) {
-    char campos[8][100];   // 8 campos, cada uno con hasta 99 caracteres + '\0'
-    int numCampo = 0;      // índice del campo que se está leyendo (0 a 7)
-    int posCampo = 0;      // posición de escritura dentro del campo actual
-    int i = 0;             // índice que recorre la línea original
+int main(int argc, char* argv[]) {
+    std::string ruta = (argc > 1) ? argv[1] : "datos/usuarios.txt";
 
-    // --- Separación de campos ---
-    while (linea[i] != '\0') {          // recorre la línea hasta su final
-        if (linea[i] == ',') {          // si encuentra una coma, termina el campo
-            campos[numCampo][posCampo] = '\0'; // cierra el campo actual
-            numCampo++;                 // pasa al siguiente campo
-            posCampo = 0;               // vuelve a empezar desde la posición 0
-        } else {
-            // Si no es coma, copia el carácter al campo actual
-            campos[numCampo][posCampo] = linea[i];
-            posCampo++;
-        }
-        i++;                            // avanza al siguiente carácter de la línea
-    }
-
-    // El último campo no termina en coma, así que se cierra aquí.
-    campos[numCampo][posCampo] = '\0';
-
-    // --- Impresión ---
-    // Nombres de los campos, en el mismo orden que el archivo
-    const char* encabezados[8] = {
-        "usuario",
-        "fecha_nacimiento",
-        "correo",
-        "foto_perfil",
-        "contrasena",
-        "ciudad",
-        "pais",
-        "fecha_inscripcion"
-    };
-
-    for (int k = 0; k < 8; k++) {       // imprime cada campo con su nombre
-        cout << encabezados[k] << ": " << campos[k] << endl;
-    }
-    cout << "----------------------------------------" << endl;
-}
-
-// ============================================================
-// PROGRAMA PRINCIPAL
-// ============================================================
-
-int main() {
-    // Abre el archivo desde la carpeta de trabajo (datos/usuarios.txt)
-    ifstream archivo("datos/usuarios.txt");
-    if (!archivo) {                     // si no se pudo abrir, avisa y termina
-        cout << "No se pudo abrir el archivo" << endl;
+    // ---------- Bloque 3: carga ----------
+    std::ifstream archivo(ruta);
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo abrir " << ruta << "\n";
         return 1;
     }
 
-    char linea[512];                    // buffer para una línea del archivo
-    int cantidad = 0;                   // cuenta los usuarios leídos
+    Usuario* usuarios = new Usuario[MAX_USUARIOS];
+    int cargados = 0;
+    std::string linea;
+    std::getline(archivo, linea);   // la primera línea es el encabezado: se descarta
 
-    // 1. Lee la primera línea (encabezado) y la descarta
-    archivo.getline(linea, 512);
+    while (cargados < MAX_USUARIOS && std::getline(archivo, linea)) {
+        // Las líneas vacías o mal formadas se saltan.
+        if (usuarios[cargados].cargarDesdeLinea(linea, cargados)) {
+            cargados++;
+        }
+    }
+    archivo.close();
 
-    // 2. Lee una línea de usuario por iteración hasta el final del archivo
-    while (archivo.getline(linea, 512)) {
-        cantidad++;
+    std::cout << "Usuarios cargados: " << cargados << "\n";
+    if (cargados > 0) {
+        std::cout << "Primero: ";
+        usuarios[0].mostrar();
+        std::cout << "Ultimo:  ";
+        usuarios[cargados - 1].mostrar();
+    }
 
-        // Solo muestra en detalle los dos primeros, para verificar
-        if (cantidad <= 2) {
-            cout << "\n[Usuario " << cantidad << "]:" << endl;
-            procesarLineaUsuario(linea);
+    // ---------- Bloque 4: login ----------
+    std::string nombreIngresado, contrasenaIngresada;
+    std::cout << "\nUsuario: ";
+    std::cin >> nombreIngresado;
+    std::cout << "Contrasena: ";
+    std::cin >> contrasenaIngresada;
+
+    int encontrado = -1;
+    for (int i = 0; i < cargados && encontrado == -1; i++) {
+        if (compararCadenas(usuarios[i].getNombre(), nombreIngresado)) {
+            encontrado = i;
         }
     }
 
-    cout << "\nTotal de usuarios leidos y procesados: " << cantidad << endl;
+    if (encontrado == -1) {
+        std::cout << "Usuario no encontrado.\n";
+    } else if (!compararCadenas(usuarios[encontrado].getContrasena(), contrasenaIngresada)) {
+        std::cout << "Contrasena incorrecta.\n";
+    } else {
+        std::cout << "Bienvenido, " << usuarios[encontrado].getNombre() << "!\n";
+    }
 
-    archivo.close();
+    delete[] usuarios;
     return 0;
 }

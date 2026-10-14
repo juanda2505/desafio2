@@ -5,8 +5,12 @@ project(desafio2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(desafio2 main.cpp
-    usuarios.cpp
+add_executable(desafio2
+    main.cpp
+    fecha.h
+    fecha.cpp
+    usuario.h
+    usuario.cpp
 )
 
 include(GNUInstallDirs)
