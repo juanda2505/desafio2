@@ -1,16 +1,19 @@
+// implementacion de la clase album
+
 #include "album.h"
-#include "usuario.h"   // compararCadenas
+#include "archivo.h"
 
 Album::Album()
     : idPropietario(-1), privacidad(Privacidad::PRIVADO), primeraFoto(-1), cantidadFotos(0) {}
 
+// valida los datos y convierte el texto de privacidad al enum
 bool Album::cargar(int idDueno, const std::string& t, const std::string& r,
                    const std::string& privTexto) {
     if (idDueno < 0 || t.empty()) return false;
 
-    if      (compararCadenas(privTexto, "publico")) privacidad = Privacidad::PUBLICO;
-    else if (compararCadenas(privTexto, "privado")) privacidad = Privacidad::PRIVADO;
-    else if (compararCadenas(privTexto, "amigos"))  privacidad = Privacidad::AMIGOS;
+    if      (Archivo::compararCadenas(privTexto, "publico")) privacidad = Privacidad::PUBLICO;
+    else if (Archivo::compararCadenas(privTexto, "privado")) privacidad = Privacidad::PRIVADO;
+    else if (Archivo::compararCadenas(privTexto, "amigos"))  privacidad = Privacidad::AMIGOS;
     else return false;                         // privacidad desconocida
 
     idPropietario = idDueno;
@@ -21,6 +24,7 @@ bool Album::cargar(int idDueno, const std::string& t, const std::string& r,
     return true;
 }
 
+// la primera foto marca el inicio; las siguientes deben venir seguidas
 bool Album::agregarFoto(int indice) {
     if (cantidadFotos == 0) {
         primeraFoto = indice;

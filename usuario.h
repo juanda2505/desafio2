@@ -1,13 +1,19 @@
+// clase usuario
+// un atributo por cada campo de usuarios.txt, mas sus amigos
+// y las solicitudes de amistad que ha recibido
+
 #ifndef USUARIO_H
 #define USUARIO_H
 
 #include <string>
 #include "fecha.h"
+#include "arreglo.h"
+#include "solicitudamistad.h"
 
 class Usuario {
 private:
-    int         idUsuario;
-    std::string nombre;          // nombre de usuario único
+    int         idUsuario;       // posicion del usuario en el arreglo (no viene en el archivo)
+    std::string nombre;          // nombre de usuario unico
     std::string contrasena;
     Fecha       fechaNacimiento;
     std::string correo;
@@ -16,13 +22,21 @@ private:
     std::string pais;
     Fecha       fechaInscripcion;
 
+    // amigos: posiciones de los otros usuarios (asociacion usuario-usuario del diagrama)
+    Arreglo<int> amigos;
+    // solicitudes que otros le enviaron a este usuario
+    Arreglo<SolicitudAmistad> solicitudesRecibidas;
+
 public:
     Usuario();
+    // no hace falta escribir constructor de copia ni destructor:
+    // arreglo ya copia y libera su propia memoria
 
-    // Recibe una línea del archivo y llena los atributos.
-    // Devuelve false si la línea no tiene todos los campos.
+    // recibe una linea del archivo y llena los atributos.
+    // devuelve false si la linea no tiene todos los campos.
     bool cargarDesdeLinea(const std::string& linea, int id);
 
+    // getters
     int                getIdUsuario()        const { return idUsuario; }
     const std::string& getNombre()           const { return nombre; }
     const std::string& getContrasena()       const { return contrasena; }
@@ -33,10 +47,28 @@ public:
     const std::string& getPais()             const { return pais; }
     const Fecha&       getFechaInscripcion() const { return fechaInscripcion; }
 
-    void mostrar() const;
-};
+    // amigos
+    void agregarAmigo(int idAmigo);
+    bool esAmigo(int idOtro) const;
+    const Arreglo<int>& obtenerAmigos() const { return amigos; }
 
-// Compara dos cadenas carácter por carácter con un ciclo propio.
-bool compararCadenas(const std::string& a, const std::string& b);
+    // solicitudes
+    // devuelve un codigo: 0 enviada, 1 a si mismo, 2 ya son amigos,
+    // 3 ya le habia enviado una, 4 el otro ya le habia enviado una
+    int  enviarSolicitud(Usuario& receptor, const Fecha& fecha);
+    void recibirSolicitud(const SolicitudAmistad& solicitud);   // tambien lo usa la carga
+    bool tieneSolicitudPendienteDe(int idEmisor) const;
+    const Arreglo<SolicitudAmistad>& getSolicitudesRecibidas() const { return solicitudesRecibidas; }
+    // cambian el estado de la solicitud en la posicion indicada.
+    // aceptar devuelve la posicion del emisor (para agregar la amistad) o -1
+    int  aceptarSolicitud(int posicion);
+    bool rechazarSolicitud(int posicion);
+
+    void mostrar() const;
+
+    // sobrecarga de operadores: dos usuarios son iguales si tienen el mismo nombre
+    bool operator==(const Usuario& otro) const;
+    bool operator!=(const Usuario& otro) const { return !(*this == otro); }
+};
 
 #endif

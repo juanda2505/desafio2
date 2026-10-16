@@ -7,16 +7,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(desafio2
     main.cpp
+    arreglo.h
+    archivo.h
+    archivo.cpp
     fecha.h
     fecha.cpp
+    solicitudamistad.h
+    solicitudamistad.cpp
     usuario.h
     usuario.cpp
-    utilidades.h
-    utilidades.cpp
     album.h
     album.cpp
     foto.h
     foto.cpp
+    redsocial.h
+    redsocial.cpp
 )
 
 include(GNUInstallDirs)
