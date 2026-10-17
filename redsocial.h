@@ -10,6 +10,8 @@
 #include "usuario.h"
 #include "album.h"
 #include "foto.h"
+#include "mensaje.h"
+#include "arreglo.h"
 
 class RedSocial {
 private:
@@ -25,11 +27,14 @@ private:
     Foto*    fotos;
     int      cantidadFotos;
     int      capacidadFotos;
+    // todos los mensajes, una sola vez cada uno; los usuarios guardan sus posiciones
+    Arreglo<Mensaje> mensajes;
 
     // solo se reescriben los archivos si algo cambio durante la ejecucion
     bool     cambiosAmistades;
     bool     cambiosSolicitudes;
     bool     cambiosLikes;
+    bool     cambiosMensajes;
 
     // generador de numeros aleatorios (la libreria random esta permitida).
     // se inicia con una semilla distinta en cada ejecucion: no hay patron fijo
@@ -43,11 +48,13 @@ private:
     bool cargarAmistades();
     void cargarSolicitudes();     // el archivo es opcional: al inicio no existe
     void cargarLikes();           // tambien opcional
+    void cargarMensajes();        // tambien opcional
 
     // guardado en los archivos; devuelven false si no se pudo escribir
     bool guardarAmistades() const;
     bool guardarSolicitudes() const;
     bool guardarLikes() const;
+    bool guardarMensajes() const;
 
     // busquedas
     int buscarAlbum(int idUsuario, const std::string& titulo, int& pista) const;
@@ -71,6 +78,14 @@ private:
                             const char* funcionalidad);
     void carrusel(int idActual, int idAlbum);
     void mostrarFoto(int idActual, int idFoto, int numero, int total) const;
+
+    // mensajes
+    void insertarRecibidoOrdenado(int idUsuario, int idMensaje);
+    void menuMensajes(int idActual);
+    void enviarMensaje(int idActual);
+    void leerMensajesNuevos(int idActual);
+    void buscarMensajesPorFecha(int idActual);
+    static bool leerFecha(const char* pregunta, Fecha& fecha);
 
     // memoria de todas las estructuras y objetos del sistema en este momento
     long long memoriaTotal() const;

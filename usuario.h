@@ -30,6 +30,10 @@ private:
     // asi que basta con saber donde empiezan y cuantos son (como las fotos del album)
     int primerAlbum;
     int cantidadAlbumes;
+    // mensajes: posiciones en el arreglo de mensajes de la red social,
+    // ordenadas por fecha de envio
+    Arreglo<int> mensajesEnviados;
+    Arreglo<int> mensajesRecibidos;
 
 public:
     Usuario();
@@ -57,6 +61,12 @@ public:
     bool agregarAlbum(int indice);
     int  getPrimerAlbum()     const { return primerAlbum; }
     int  getCantidadAlbumes() const { return cantidadAlbumes; }
+
+    // mensajes
+    void registrarEnviado(int idMensaje)  { mensajesEnviados.agregar(idMensaje); }
+    Arreglo<int>&       getMensajesRecibidos()       { return mensajesRecibidos; }
+    const Arreglo<int>& getMensajesRecibidos() const { return mensajesRecibidos; }
+    const Arreglo<int>& getMensajesEnviados()  const { return mensajesEnviados; }
 
     // amigos
     void agregarAmigo(int idAmigo);

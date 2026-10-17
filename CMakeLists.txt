@@ -16,6 +16,8 @@ add_executable(desafio2
     fecha.cpp
     solicitudamistad.h
     solicitudamistad.cpp
+    mensaje.h
+    mensaje.cpp
     usuario.h
     usuario.cpp
     album.h

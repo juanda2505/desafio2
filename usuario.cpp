@@ -99,7 +99,8 @@ long long Usuario::memoria() const {
     return Metricas::memoriaTexto(nombre) + Metricas::memoriaTexto(contrasena)
          + Metricas::memoriaTexto(correo) + Metricas::memoriaTexto(fotoPerfil)
          + Metricas::memoriaTexto(ciudad) + Metricas::memoriaTexto(pais)
-         + amigos.memoria() + solicitudesRecibidas.memoria();
+         + amigos.memoria() + solicitudesRecibidas.memoria()
+         + mensajesEnviados.memoria() + mensajesRecibidos.memoria();
 }
 
 bool Usuario::operator==(const Usuario& otro) const {

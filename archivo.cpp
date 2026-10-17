@@ -20,6 +20,18 @@ bool Archivo::separarCampos(const std::string& linea, std::string campos[], int 
     return n == esperados - 1;                 // si es menor, faltan campos
 }
 
+bool Archivo::separarCamposConResto(const std::string& linea, std::string campos[], int esperados) {
+    for (int k = 0; k < esperados; k++) campos[k].clear();
+    int n = 0;
+    for (unsigned i = 0; i < linea.size(); i++) {
+        char c = linea[i];
+        if (c == '\r') continue;
+        if (c == ',' && n < esperados - 1) n++;   // las comas del ultimo campo se conservan
+        else campos[n] += c;
+    }
+    return n == esperados - 1;
+}
+
 // arma el numero digito por digito
 bool Archivo::textoAEntero(const std::string& texto, int& resultado) {
     if (texto.empty()) return false;

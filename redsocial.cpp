@@ -14,7 +14,7 @@ RedSocial::RedSocial(const std::string& carpetaDatos)
     : carpeta(carpetaDatos), usuarios(nullptr), cantidadUsuarios(0), ordenPorNombre(nullptr),
       albumes(nullptr), cantidadAlbumes(0), capacidadAlbumes(0),
       fotos(nullptr), cantidadFotos(0), capacidadFotos(0),
-      cambiosAmistades(false), cambiosSolicitudes(false), cambiosLikes(false),
+      cambiosAmistades(false), cambiosSolicitudes(false), cambiosLikes(false), cambiosMensajes(false),
       generador(std::random_device{}()) {}
 
 // liberacion de memoria
@@ -33,6 +33,7 @@ bool RedSocial::cargarDatos() {
     if (!cargarAlbumes() || !cargarFotos() || !cargarAmistades()) return false;
     cargarSolicitudes();
     cargarLikes();
+    cargarMensajes();
     return true;
 }
 
@@ -260,6 +261,7 @@ void RedSocial::guardarDatos() {
     if (cambiosAmistades && guardarAmistades())     cambiosAmistades = false;
     if (cambiosSolicitudes && guardarSolicitudes()) cambiosSolicitudes = false;
     if (cambiosLikes && guardarLikes())             cambiosLikes = false;
+    if (cambiosMensajes && guardarMensajes())       cambiosMensajes = false;
 }
 
 bool RedSocial::guardarLikes() const {
@@ -290,6 +292,8 @@ long long RedSocial::memoriaTotal() const {
     for (int i = 0; i < cantidadUsuarios; i++) total += usuarios[i].memoria();
     for (int i = 0; i < cantidadAlbumes; i++)  total += albumes[i].memoria();
     for (int i = 0; i < cantidadFotos; i++)    total += fotos[i].memoria();
+    total += mensajes.memoria();
+    for (int i = 0; i < mensajes.tamano(); i++) total += mensajes[i].memoria();
     return total;
 }
 
@@ -402,18 +406,20 @@ void RedSocial::menuPrincipal(int idActual) {
     // indicador de la actualizacion: solo se puede usar una vez por sesion
     bool fotosActualizadas = false;
 
-    const int CERRAR_SESION = 4;
+    const int CERRAR_SESION = 5;
     int opcion;
     do {
         std::cout << "\nMenu principal (" << usuarios[idActual].getNombre() << ")\n"
                   << "1. Administrar amistades\n"
                   << "2. Visitar perfil de un amigo\n"
                   << "3. Actualizar fotos de amigos\n"
-                  << "4. Cerrar sesion\n"
+                  << "4. Administrar mensajes\n"
+                  << "5. Cerrar sesion\n"
                   << "Opcion: ";
         opcion = leerOpcion();
         if (opcion == 1) menuAmistades(idActual);
         else if (opcion == 2) visitarPerfil(idActual);
+        else if (opcion == 4) menuMensajes(idActual);
         else if (opcion == 3) {
             if (fotosActualizadas) {
                 std::cout << "Ya actualizaste las fotos en esta sesion.\n";
@@ -724,4 +730,209 @@ void RedSocial::mostrarFotosAmigos(int idActual, const Arreglo<int>& comunes, Ar
                     + (long long)sizeof(bool) * n + sizeof(n) + sizeof(cantidad);
     delete[] bloqueado;
     Metricas::mostrar(funcionalidad, memoriaTotal() + local);
+}
+
+// mensajes
+
+// lectura de mensajes.txt: emisor,receptor,fecha,leido,texto
+// el texto va de ultimo para que pueda tener comas. el archivo viene ordenado por
+// fecha, asi que cada mensaje queda al final de la lista de su receptor
+void RedSocial::cargarMensajes() {
+    int total = Archivo::contarLineasDeDatos(carpeta + "mensajes.txt");
+    if (total < 0) {
+        std::cout << "Mensajes cargados: 0\n";
+        return;
+    }
+    // se reserva de una vez lo del archivo y un margen para los nuevos
+    mensajes.reservar(total + 100);
+    std::ifstream archivo(carpeta + "mensajes.txt");
+    std::string linea, campo[5];
+    std::getline(archivo, linea);                         // encabezado
+    while (std::getline(archivo, linea)) {
+        if (!Archivo::separarCamposConResto(linea, campo, 5)) continue;
+        int emisor = buscarUsuario(campo[0]);
+        int receptor = buscarUsuario(campo[1]);
+        Fecha fecha = Fecha::desdeTexto(campo[2]);
+        if (emisor < 0 || receptor < 0 || !fecha.esValida()) continue;
+        bool leido = Archivo::compararCadenas(campo[3], "si");
+
+        mensajes.agregar(Mensaje(emisor, receptor, campo[4], fecha, leido));
+        int id = mensajes.tamano() - 1;
+        usuarios[emisor].registrarEnviado(id);
+        insertarRecibidoOrdenado(receptor, id);
+    }
+    std::cout << "Mensajes cargados: " << mensajes.tamano() << "\n";
+}
+
+bool RedSocial::guardarMensajes() const {
+    std::ofstream archivo(carpeta + "mensajes.txt");
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo guardar " << carpeta << "mensajes.txt\n";
+        return false;
+    }
+    archivo << "emisor,receptor,fecha,leido,texto\n";
+    for (int i = 0; i < mensajes.tamano(); i++) {
+        const Mensaje& m = mensajes[i];
+        archivo << usuarios[m.getIdRemitente()].getNombre() << ","
+                << usuarios[m.getIdDestinatario()].getNombre() << ","
+                << m.getFechaEnvio() << "," << (m.estaLeido() ? "si" : "no") << ","
+                << m.getContenido() << "\n";
+    }
+    std::cout << "Mensajes guardados en " << carpeta << "mensajes.txt\n";
+    return true;
+}
+
+// mantiene los recibidos ordenados por fecha: se busca la posicion desde el final.
+// como casi siempre el mensaje es el mas reciente, queda al final en una sola vuelta
+void RedSocial::insertarRecibidoOrdenado(int idUsuario, int idMensaje) {
+    Arreglo<int>& recibidos = usuarios[idUsuario].getMensajesRecibidos();
+    const Fecha& fecha = mensajes[idMensaje].getFechaEnvio();
+    int pos = recibidos.tamano();
+    while (pos > 0 && fecha < mensajes[recibidos[pos - 1]].getFechaEnvio()) {
+        Metricas::contar();
+        pos--;
+    }
+    recibidos.insertar(pos, idMensaje);
+}
+
+void RedSocial::menuMensajes(int idActual) {
+    const int VOLVER = 4;
+    int opcion;
+    do {
+        std::cout << "\nAdministrar mensajes\n"
+                  << "1. Enviar mensaje\n"
+                  << "2. Leer mensajes nuevos\n"
+                  << "3. Buscar mensajes por rango de fechas\n"
+                  << "4. Volver\n"
+                  << "Opcion: ";
+        opcion = leerOpcion();
+        if (opcion == 1) enviarMensaje(idActual);
+        else if (opcion == 2) leerMensajesNuevos(idActual);
+        else if (opcion == 3) buscarMensajesPorFecha(idActual);
+        else if (opcion != VOLVER && opcion != FIN_ENTRADA) std::cout << "Opcion no valida.\n";
+    } while (opcion != VOLVER && opcion != FIN_ENTRADA);
+}
+
+// enviar mensaje: el destinatario debe existir y ser amigo; el texto no puede
+// estar vacio ni pasar de 512 caracteres. la fecha es la actual del sistema
+void RedSocial::enviarMensaje(int idActual) {
+    Metricas::reiniciar();
+    std::string nombre, texto, restoLinea;
+    std::cout << "Nombre de tu amigo: ";
+    std::cin >> nombre;
+    std::getline(std::cin, restoLinea);       // descarta el fin de la linea del nombre
+
+    int idAmigo = buscarUsuario(nombre);
+    if (idAmigo == -1) {
+        std::cout << "El usuario " << nombre << " no existe.\n";
+    } else if (idAmigo == idActual) {
+        std::cout << "No puedes enviarte un mensaje a ti mismo.\n";
+    } else if (!usuarios[idActual].esAmigo(idAmigo)) {
+        std::cout << nombre << " no es tu amigo.\n";
+    } else {
+        std::cout << "Mensaje (maximo " << Mensaje::MAX_CARACTERES << " caracteres): ";
+        std::getline(std::cin, texto);
+        bool soloEspacios = true;
+        for (unsigned i = 0; i < texto.size() && soloEspacios; i++) {
+            Metricas::contar();
+            if (texto[i] != ' ' && texto[i] != '\t' && texto[i] != '\r') soloEspacios = false;
+        }
+        if (soloEspacios) {
+            std::cout << "El mensaje esta vacio, no se envio.\n";
+        } else if ((int)texto.size() > Mensaje::MAX_CARACTERES) {
+            std::cout << "El mensaje tiene " << texto.size() << " caracteres; el maximo es "
+                      << Mensaje::MAX_CARACTERES << ". No se envio.\n";
+        } else {
+            mensajes.agregar(Mensaje(idActual, idAmigo, texto, Fecha::ahora()));
+            int id = mensajes.tamano() - 1;
+            usuarios[idActual].registrarEnviado(id);
+            insertarRecibidoOrdenado(idAmigo, id);
+            cambiosMensajes = true;
+            std::cout << "Mensaje enviado a " << nombre << ".\n";
+        }
+    }
+    long long local = sizeof(nombre) + sizeof(texto) + sizeof(restoLinea) + sizeof(idAmigo)
+                    + Metricas::memoriaTexto(nombre) + Metricas::memoriaTexto(texto)
+                    + Metricas::memoriaTexto(restoLinea);
+    Metricas::mostrar("enviar mensaje", memoriaTotal() + local);
+}
+
+// leer nuevos: los recibidos ya estan ordenados por fecha de envio,
+// asi que basta recorrerlos una vez, mostrar los no leidos y marcarlos
+void RedSocial::leerMensajesNuevos(int idActual) {
+    Metricas::reiniciar();
+    const Arreglo<int>& recibidos = usuarios[idActual].getMensajesRecibidos();
+    int nuevos = 0;
+    for (int k = 0; k < recibidos.tamano(); k++) {
+        Metricas::contar();
+        Mensaje& m = mensajes[recibidos[k]];
+        if (m.estaLeido()) continue;
+        if (nuevos == 0) std::cout << "\nMensajes nuevos:\n";
+        std::cout << "  [" << m.getFechaEnvio() << "] "
+                  << usuarios[m.getIdRemitente()].getNombre() << ": " << m.getContenido() << "\n";
+        m.marcarComoLeido();
+        nuevos++;
+    }
+    if (nuevos == 0) {
+        std::cout << "No tienes mensajes nuevos.\n";
+    } else {
+        std::cout << nuevos << " mensajes marcados como leidos.\n";
+        cambiosMensajes = true;
+    }
+    long long local = sizeof(nuevos) + sizeof(idActual);
+    Metricas::mostrar("leer mensajes nuevos", memoriaTotal() + local);
+}
+
+// pide una fecha aaaa-mm-dd y revisa que sea valida
+bool RedSocial::leerFecha(const char* pregunta, Fecha& fecha) {
+    std::string texto;
+    std::cout << pregunta;
+    std::cin >> texto;
+    fecha = Fecha::desdeTexto(texto);
+    if (texto.size() != 10 || !fecha.esValida()) {
+        std::cout << "Fecha no valida: " << texto << ". Usa el formato aaaa-mm-dd.\n";
+        return false;
+    }
+    return true;
+}
+
+// buscar por rango: como los recibidos estan ordenados por fecha, una busqueda
+// binaria encuentra el primero que no es anterior al inicio, y desde ahi se
+// recorre solo hasta pasar el fin (el dia final completo, hasta las 23:59)
+void RedSocial::buscarMensajesPorFecha(int idActual) {
+    Metricas::reiniciar();
+    Fecha inicio, fin;
+    int encontrados = 0;
+    if (leerFecha("Fecha de inicio (aaaa-mm-dd): ", inicio)
+        && leerFecha("Fecha de fin (aaaa-mm-dd): ", fin)) {
+        if (fin < inicio) {
+            std::cout << "La fecha de inicio no puede ser posterior a la de fin.\n";
+        } else {
+            Fecha finDelDia(fin.getAnio(), fin.getMes(), fin.getDia(), 23, 59);
+            const Arreglo<int>& recibidos = usuarios[idActual].getMensajesRecibidos();
+
+            int ini = 0, fi = recibidos.tamano();
+            while (ini < fi) {
+                Metricas::contar();
+                int medio = (ini + fi) / 2;
+                if (mensajes[recibidos[medio]].getFechaEnvio() < inicio) ini = medio + 1;
+                else fi = medio;
+            }
+            for (int k = ini; k < recibidos.tamano(); k++) {
+                Metricas::contar();
+                const Mensaje& m = mensajes[recibidos[k]];
+                if (!m.esEntreFechas(inicio, finDelDia)) break;   // ya paso el fin
+                if (encontrados == 0) std::cout << "\nMensajes recibidos entre "
+                    << inicio.aTextoFecha() << " y " << fin.aTextoFecha() << ":\n";
+                std::cout << "  [" << m.getFechaEnvio() << "] "
+                          << usuarios[m.getIdRemitente()].getNombre() << ": " << m.getContenido()
+                          << (m.estaLeido() ? "" : "  (nuevo)") << "\n";
+                encontrados++;
+            }
+            if (encontrados == 0) std::cout << "No recibiste mensajes en ese rango.\n";
+            else std::cout << "Mensajes encontrados: " << encontrados << "\n";
+        }
+    }
+    long long local = sizeof(inicio) + sizeof(fin) + sizeof(encontrados) + sizeof(idActual);
+    Metricas::mostrar("buscar mensajes por rango de fechas", memoriaTotal() + local);
 }

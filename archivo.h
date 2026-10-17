@@ -13,6 +13,10 @@ public:
     // tiene exactamente 'esperados' campos. ignora el '\r' de windows
     static bool separarCampos(const std::string& linea, std::string campos[], int esperados);
 
+    // igual que separarCampos, pero el ultimo campo se queda con el resto de la
+    // linea aunque tenga comas (se usa para el texto de los mensajes)
+    static bool separarCamposConResto(const std::string& linea, std::string campos[], int esperados);
+
     // convierte texto a entero positivo.
     // devuelve false si el texto esta vacio o tiene algo que no sea digito
     static bool textoAEntero(const std::string& texto, int& resultado);

@@ -50,9 +50,29 @@ public:
 
     ~Arreglo() { delete[] datos; }
 
+    // reserva de una vez espacio para 'n' elementos (cuando ya se sabe cuantos vienen)
+    void reservar(int n) {
+        if (n <= capacidad) return;
+        T* nuevo = new T[n];
+        for (int i = 0; i < cantidad; i++) { Metricas::contar(); nuevo[i] = datos[i]; }
+        delete[] datos;
+        datos = nuevo;
+        capacidad = n;
+    }
+
     void agregar(const T& valor) {
         if (cantidad == capacidad) crecer();
         datos[cantidad++] = valor;
+    }
+
+    // inserta en la posicion indicada corriendo los siguientes a la derecha
+    void insertar(int posicion, const T& valor) {
+        if (posicion < 0) posicion = 0;
+        if (posicion > cantidad) posicion = cantidad;
+        if (cantidad == capacidad) crecer();
+        for (int i = cantidad; i > posicion; i--) { Metricas::contar(); datos[i] = datos[i - 1]; }
+        datos[posicion] = valor;
+        cantidad++;
     }
 
     // quita la posicion indicada corriendo los siguientes a la izquierda
