@@ -6,6 +6,7 @@
 
 #include <string>
 #include "fecha.h"
+#include "arreglo.h"
 
 class Foto {
 private:
@@ -14,7 +15,10 @@ private:
     Fecha       fechaCaptura;
     int         tamanoKB;
     std::string ruta;
-    int         likes;          // contador: no se valida un like por usuario
+    int         likesIniciales; // likes que trae fotos.txt (no se sabe quien los dio)
+    // usuarios que dieron like dentro de la plataforma. guardar quien lo dio
+    // permite quitar el like de forma correcta y evitar que alguien lo repita
+    Arreglo<int> usuariosLike;
 
 public:
     Foto();
@@ -30,11 +34,17 @@ public:
     const Fecha&       getFechaCaptura() const { return fechaCaptura; }
     int                getTamanoKB()     const { return tamanoKB; }
     const std::string& getRuta()         const { return ruta; }
-    int                getLikes()        const { return likes; }
+    int                getLikes()        const { return likesIniciales + usuariosLike.tamano(); }
+    const Arreglo<int>& getUsuariosLike() const { return usuariosLike; }
 
-    // dar o quitar like desde el carrusel
-    void darLike()    { likes++; }
-    void quitarLike() { if (likes > 0) likes--; }
+    // likes desde el carrusel
+    bool tieneLikeDe(int idUsuario) const { return usuariosLike.buscar(idUsuario) != -1; }
+    // da el like si no lo tenia o lo quita si ya lo tenia; devuelve true si quedo con like
+    bool alternarLike(int idUsuario);
+    void agregarLike(int idUsuario);   // lo usa la carga de likes.txt
+
+    // bytes en el heap de esta foto (textos y lista de likes)
+    long long memoria() const;
 };
 
 #endif

@@ -3,7 +3,7 @@
 #include "foto.h"
 #include "archivo.h"
 
-Foto::Foto() : idAlbum(-1), tamanoKB(0), likes(0) {}
+Foto::Foto() : idAlbum(-1), tamanoKB(0), likesIniciales(0) {}
 
 // valida numeros y fecha antes de guardar; si algo falla la foto se descarta
 bool Foto::cargar(int idAlb, const std::string& n, const std::string& fecha,
@@ -20,6 +20,24 @@ bool Foto::cargar(int idAlb, const std::string& n, const std::string& fecha,
     fechaCaptura = f;
     tamanoKB     = t;
     ruta         = r;
-    likes        = l;
+    likesIniciales = l;
     return true;
+}
+
+bool Foto::alternarLike(int idUsuario) {
+    int posicion = usuariosLike.buscar(idUsuario);
+    if (posicion == -1) {
+        usuariosLike.agregar(idUsuario);
+        return true;
+    }
+    usuariosLike.eliminar(posicion);
+    return false;
+}
+
+void Foto::agregarLike(int idUsuario) {
+    if (!tieneLikeDe(idUsuario)) usuariosLike.agregar(idUsuario);
+}
+
+long long Foto::memoria() const {
+    return Metricas::memoriaTexto(nombre) + Metricas::memoriaTexto(ruta) + usuariosLike.memoria();
 }

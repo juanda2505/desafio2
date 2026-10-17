@@ -4,7 +4,7 @@
 #include "archivo.h"
 #include <iostream>
 
-Usuario::Usuario() : idUsuario(-1) {}
+Usuario::Usuario() : idUsuario(-1), primerAlbum(-1), cantidadAlbumes(0) {}
 
 // lectura y separacion de campos
 bool Usuario::cargarDesdeLinea(const std::string& linea, int id) {
@@ -24,6 +24,17 @@ bool Usuario::cargarDesdeLinea(const std::string& linea, int id) {
     ciudad           = campo[5];
     pais             = campo[6];
     fechaInscripcion = Fecha::desdeTexto(campo[7]);
+    return true;
+}
+
+// albumes: la misma idea de album.agregarFoto
+bool Usuario::agregarAlbum(int indice) {
+    if (cantidadAlbumes == 0) {
+        primerAlbum = indice;
+    } else if (indice != primerAlbum + cantidadAlbumes) {
+        return false;
+    }
+    cantidadAlbumes++;
     return true;
 }
 
@@ -56,6 +67,7 @@ void Usuario::recibirSolicitud(const SolicitudAmistad& solicitud) {
 
 bool Usuario::tieneSolicitudPendienteDe(int idEmisor) const {
     for (int i = 0; i < solicitudesRecibidas.tamano(); i++) {
+        Metricas::contar();
         const SolicitudAmistad& s = solicitudesRecibidas[i];
         if (s.estaPendiente() && s.getIdEmisor() == idEmisor) return true;
     }
@@ -81,6 +93,13 @@ void Usuario::mostrar() const {
               << " | nacimiento: " << fechaNacimiento.aTextoFecha()
               << " | " << ciudad << ", " << pais
               << " | inscripcion: " << fechaInscripcion.aTextoFecha() << "\n";
+}
+
+long long Usuario::memoria() const {
+    return Metricas::memoriaTexto(nombre) + Metricas::memoriaTexto(contrasena)
+         + Metricas::memoriaTexto(correo) + Metricas::memoriaTexto(fotoPerfil)
+         + Metricas::memoriaTexto(ciudad) + Metricas::memoriaTexto(pais)
+         + amigos.memoria() + solicitudesRecibidas.memoria();
 }
 
 bool Usuario::operator==(const Usuario& otro) const {

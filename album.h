@@ -41,6 +41,12 @@ public:
     int                getCantidadFotos() const { return cantidadFotos; }
 
     const char* privacidadTexto() const;
+
+    // el dueno ve todo; los demas ven los publicos, y los amigos tambien los de amigos
+    bool esVisiblePara(int idVisitante, bool esAmigoDelDueno) const;
+
+    // bytes en el heap de este album (sus textos)
+    long long memoria() const;
 };
 
 #endif

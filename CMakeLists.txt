@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(desafio2
     main.cpp
     arreglo.h
+    metricas.h
+    metricas.cpp
     archivo.h
     archivo.cpp
     fecha.h

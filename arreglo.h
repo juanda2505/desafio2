@@ -5,6 +5,8 @@
 #ifndef ARREGLO_H
 #define ARREGLO_H
 
+#include "metricas.h"
+
 template <typename T>
 class Arreglo {
 private:
@@ -16,7 +18,7 @@ private:
     void crecer() {
         int nuevaCapacidad = (capacidad == 0) ? 4 : capacidad * 2;
         T* nuevo = new T[nuevaCapacidad];
-        for (int i = 0; i < cantidad; i++) nuevo[i] = datos[i];
+        for (int i = 0; i < cantidad; i++) { Metricas::contar(); nuevo[i] = datos[i]; }
         delete[] datos;
         datos = nuevo;
         capacidad = nuevaCapacidad;
@@ -56,7 +58,7 @@ public:
     // quita la posicion indicada corriendo los siguientes a la izquierda
     bool eliminar(int posicion) {
         if (posicion < 0 || posicion >= cantidad) return false;
-        for (int i = posicion; i < cantidad - 1; i++) datos[i] = datos[i + 1];
+        for (int i = posicion; i < cantidad - 1; i++) { Metricas::contar(); datos[i] = datos[i + 1]; }
         cantidad--;
         return true;
     }
@@ -64,6 +66,7 @@ public:
     // busqueda lineal; devuelve la posicion o -1
     int buscar(const T& valor) const {
         for (int i = 0; i < cantidad; i++) {
+            Metricas::contar();
             if (datos[i] == valor) return i;
         }
         return -1;
@@ -74,6 +77,9 @@ public:
 
     int  tamano() const { return cantidad; }
     bool vacia()  const { return cantidad == 0; }
+
+    // bytes reservados en el heap por el arreglo (sin contar lo que apunten los elementos)
+    long long memoria() const { return (long long)sizeof(T) * capacidad; }
 };
 
 #endif

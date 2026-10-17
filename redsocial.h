@@ -6,6 +6,7 @@
 #define REDSOCIAL_H
 
 #include <string>
+#include <random>
 #include "usuario.h"
 #include "album.h"
 #include "foto.h"
@@ -20,12 +21,19 @@ private:
 
     Album*   albumes;
     int      cantidadAlbumes;
+    int      capacidadAlbumes;    // tamano reservado (para medir la memoria)
     Foto*    fotos;
     int      cantidadFotos;
+    int      capacidadFotos;
 
     // solo se reescriben los archivos si algo cambio durante la ejecucion
     bool     cambiosAmistades;
     bool     cambiosSolicitudes;
+    bool     cambiosLikes;
+
+    // generador de numeros aleatorios (la libreria random esta permitida).
+    // se inicia con una semilla distinta en cada ejecucion: no hay patron fijo
+    std::mt19937 generador;
 
     // carga desde los archivos
     bool cargarUsuarios();
@@ -34,10 +42,12 @@ private:
     bool cargarFotos();
     bool cargarAmistades();
     void cargarSolicitudes();     // el archivo es opcional: al inicio no existe
+    void cargarLikes();           // tambien opcional
 
     // guardado en los archivos; devuelven false si no se pudo escribir
     bool guardarAmistades() const;
     bool guardarSolicitudes() const;
+    bool guardarLikes() const;
 
     // busquedas
     int buscarAlbum(int idUsuario, const std::string& titulo, int& pista) const;
@@ -51,6 +61,19 @@ private:
     void menuAmistades(int idActual);
     void enviarSolicitud(int idActual);
     void verSolicitudesRecibidas(int idActual);
+    void visitarPerfil(int idActual);
+
+    // fotos de perfil de amigos al iniciar sesion
+    static int pesoPorComunes(int comunes);
+    void contarAmigosEnComun(int idActual, Arreglo<int>& comunes);
+    void elegirPonderado(const Arreglo<int>& pesos, bool* bloqueado, int cantidad, Arreglo<int>& elegidos);
+    void mostrarFotosAmigos(int idActual, const Arreglo<int>& comunes, Arreglo<int>& anteriores,
+                            const char* funcionalidad);
+    void carrusel(int idActual, int idAlbum);
+    void mostrarFoto(int idActual, int idFoto, int numero, int total) const;
+
+    // memoria de todas las estructuras y objetos del sistema en este momento
+    long long memoriaTotal() const;
 
 public:
     explicit RedSocial(const std::string& carpetaDatos);

@@ -2,6 +2,7 @@
 
 #include "album.h"
 #include "archivo.h"
+#include "metricas.h"
 
 Album::Album()
     : idPropietario(-1), privacidad(Privacidad::PRIVADO), primeraFoto(-1), cantidadFotos(0) {}
@@ -41,4 +42,15 @@ const char* Album::privacidadTexto() const {
         case Privacidad::AMIGOS:  return "amigos";
         default:                  return "privado";
     }
+}
+
+bool Album::esVisiblePara(int idVisitante, bool esAmigoDelDueno) const {
+    if (idVisitante == idPropietario)       return true;
+    if (privacidad == Privacidad::PUBLICO)  return true;
+    if (privacidad == Privacidad::AMIGOS)   return esAmigoDelDueno;
+    return false;                           // privado
+}
+
+long long Album::memoria() const {
+    return Metricas::memoriaTexto(titulo) + Metricas::memoriaTexto(ruta);
 }

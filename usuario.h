@@ -26,6 +26,10 @@ private:
     Arreglo<int> amigos;
     // solicitudes que otros le enviaron a este usuario
     Arreglo<SolicitudAmistad> solicitudesRecibidas;
+    // los albumes de un usuario quedan seguidos en el arreglo de albumes,
+    // asi que basta con saber donde empiezan y cuantos son (como las fotos del album)
+    int primerAlbum;
+    int cantidadAlbumes;
 
 public:
     Usuario();
@@ -47,6 +51,13 @@ public:
     const std::string& getPais()             const { return pais; }
     const Fecha&       getFechaInscripcion() const { return fechaInscripcion; }
 
+    // albumes
+    // registra que el album en la posicion 'indice' es de este usuario.
+    // devuelve false si no queda seguido de los anteriores
+    bool agregarAlbum(int indice);
+    int  getPrimerAlbum()     const { return primerAlbum; }
+    int  getCantidadAlbumes() const { return cantidadAlbumes; }
+
     // amigos
     void agregarAmigo(int idAmigo);
     bool esAmigo(int idOtro) const;
@@ -65,6 +76,9 @@ public:
     bool rechazarSolicitud(int posicion);
 
     void mostrar() const;
+
+    // bytes en el heap de este usuario (textos, amigos y solicitudes)
+    long long memoria() const;
 
     // sobrecarga de operadores: dos usuarios son iguales si tienen el mismo nombre
     bool operator==(const Usuario& otro) const;
