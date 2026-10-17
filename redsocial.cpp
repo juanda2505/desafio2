@@ -217,15 +217,21 @@ void RedSocial::cargarSolicitudes() {
     std::cout << "Solicitudes cargadas: " << total << "\n";
 }
 
-// guardado: solo se reescribe lo que cambio
-void RedSocial::guardarDatos() const {
-    if (cambiosAmistades)   guardarAmistades();
-    if (cambiosSolicitudes) guardarSolicitudes();
+// guardado: solo se reescribe lo que cambio.
+// el indicador solo vuelve a falso si el archivo se escribio bien;
+// si fallo, se intentara de nuevo en el siguiente guardado
+void RedSocial::guardarDatos() {
+    if (cambiosAmistades && guardarAmistades())     cambiosAmistades = false;
+    if (cambiosSolicitudes && guardarSolicitudes()) cambiosSolicitudes = false;
 }
 
 // cada amistad se escribe una sola vez: solo cuando el amigo tiene posicion mayor
-void RedSocial::guardarAmistades() const {
+bool RedSocial::guardarAmistades() const {
     std::ofstream archivo(carpeta + "amistades.txt");
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo guardar " << carpeta << "amistades.txt\n";
+        return false;
+    }
     archivo << "usuario1,usuario2\n";
     for (int i = 0; i < cantidadUsuarios; i++) {
         const Arreglo<int>& amigos = usuarios[i].obtenerAmigos();
@@ -236,10 +242,15 @@ void RedSocial::guardarAmistades() const {
         }
     }
     std::cout << "Amistades guardadas en " << carpeta << "amistades.txt\n";
+    return true;
 }
 
-void RedSocial::guardarSolicitudes() const {
+bool RedSocial::guardarSolicitudes() const {
     std::ofstream archivo(carpeta + "solicitudes.txt");
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo guardar " << carpeta << "solicitudes.txt\n";
+        return false;
+    }
     archivo << "emisor,receptor,fecha,estado\n";
     for (int i = 0; i < cantidadUsuarios; i++) {
         const Arreglo<SolicitudAmistad>& lista = usuarios[i].getSolicitudesRecibidas();
@@ -250,6 +261,7 @@ void RedSocial::guardarSolicitudes() const {
         }
     }
     std::cout << "Solicitudes guardadas en " << carpeta << "solicitudes.txt\n";
+    return true;
 }
 
 // menu
@@ -281,6 +293,7 @@ void RedSocial::ejecutar() {
             std::cout << "Opcion no valida.\n";
         }
     } while (opcion != SALIR && opcion != FIN_ENTRADA);
+    // al salir normalmente ya no queda nada pendiente, pero se revisa por seguridad
     guardarDatos();
 }
 
@@ -317,6 +330,10 @@ void RedSocial::menuPrincipal(int idActual) {
         if (opcion == 1) menuAmistades(idActual);
         else if (opcion != CERRAR_SESION && opcion != FIN_ENTRADA) std::cout << "Opcion no valida.\n";
     } while (opcion != CERRAR_SESION && opcion != FIN_ENTRADA);
+
+    // al cerrar sesion se guardan los cambios de esta sesion (si los hubo),
+    // asi un cierre brusco del programa solo pierde lo de la sesion abierta
+    guardarDatos();
 }
 
 // administrar amistades

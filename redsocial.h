@@ -35,9 +35,9 @@ private:
     bool cargarAmistades();
     void cargarSolicitudes();     // el archivo es opcional: al inicio no existe
 
-    // guardado en los archivos
-    void guardarAmistades() const;
-    void guardarSolicitudes() const;
+    // guardado en los archivos; devuelven false si no se pudo escribir
+    bool guardarAmistades() const;
+    bool guardarSolicitudes() const;
 
     // busquedas
     int buscarAlbum(int idUsuario, const std::string& titulo, int& pista) const;
@@ -62,7 +62,9 @@ public:
     RedSocial& operator=(const RedSocial&) = delete;
 
     bool cargarDatos();
-    void guardarDatos() const;
+    // guarda solo lo que cambio y vuelve a poner los indicadores en falso,
+    // para no reescribir lo mismo dos veces. se llama al cerrar sesion y al salir
+    void guardarDatos();
     void ejecutar();
 
     // busqueda binaria sobre el indice ordenado; devuelve la posicion o -1
